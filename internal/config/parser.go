@@ -14,11 +14,14 @@ import (
 )
 
 type SSHConfig struct {
-	Name string `json:"name"`
-	Host string `json:"host"`
-	Port string `json:"port"`
-	User string `json:"user"`
-	Key  string `json:"key"`
+	Name                  string `json:"name"`
+	Host                  string `json:"host"`
+	Port                  string `json:"port"`
+	User                  string `json:"user"`
+	Key                   string `json:"key"`
+	UserKnownHostsFile    string `json:"userknownhostsfile"`
+	StrictHostKeyChecking string `json:"stricthostkeychecking"`
+	LogLevel              string `json:"loglevel"`
 }
 
 func Parse(configFile string) ([]SSHConfig, error) {
@@ -52,6 +55,7 @@ func ParseWithSearch(search string, configFile string) ([]SSHConfig, error) {
 			line = m1.ReplaceAllString(line, " ")
 
 			lineData := strings.Split(line, " ")
+			option := lineData[0]
 			value := ""
 			if len(lineData) > 1 {
 				value = lineData[1]
@@ -63,14 +67,20 @@ func ParseWithSearch(search string, configFile string) ([]SSHConfig, error) {
 					panic(err)
 				}
 				configs = append(configs, result...)
-			case strings.Contains(line, "Host"):
+			case option == "HostName":
 				sshConfig.Host = value
-			case strings.Contains(line, "Port"):
+			case option == "Port":
 				sshConfig.Port = value
-			case strings.Contains(line, "User"):
+			case option == "User":
 				sshConfig.User = value
-			case strings.Contains(line, "IdentityFile"):
+			case option == "IdentityFile":
 				sshConfig.Key = value
+			case option == "UserKnownHostsFile":
+				sshConfig.UserKnownHostsFile = value
+			case option == "StrictHostKeyChecking":
+				sshConfig.StrictHostKeyChecking = value
+			case option == "LogLevel":
+				sshConfig.LogLevel = value
 			}
 		}
 

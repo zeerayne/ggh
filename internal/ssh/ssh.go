@@ -2,11 +2,12 @@ package ssh
 
 import (
 	"fmt"
-	"github.com/byawitz/ggh/internal/config"
 	"os"
 	"os/exec"
 	"slices"
 	"strings"
+
+	"github.com/byawitz/ggh/internal/config"
 )
 
 func GenerateCommandArgs(c config.SSHConfig) []string {
@@ -24,6 +25,19 @@ func GenerateCommandArgs(c config.SSHConfig) []string {
 	if c.Port != "" {
 		port = "-p " + c.Port
 	}
+
+	if c.StrictHostKeyChecking != "" {
+		port = "-o StrictHostKeyChecking=" + c.StrictHostKeyChecking
+	}
+
+	if c.UserKnownHostsFile != "" {
+		port = "-o UserKnownHostsFile" + c.UserKnownHostsFile
+	}
+
+	if c.LogLevel != "" {
+		port = "-o LogLevel" + c.LogLevel
+	}
+
 	return strings.Split(fmt.Sprintf("%s@%s %s %s", user, c.Host, key, port), " ")
 }
 
