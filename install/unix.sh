@@ -61,11 +61,24 @@ install() {
     fi
 }
 
+install_aur_package() {
+    build_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/ggh
+    echo "${build_dir}"
+    mkdir -p "${build_dir}"
+    curl --output "${build_dir}/.SRCINFO" https://raw.githubusercontent.com/zeerayne/ggh/refs/heads/dev/install/aur/.SRCINFO
+    curl --output "${build_dir}/PKGBUILD" https://raw.githubusercontent.com/zeerayne/ggh/refs/heads/dev/install/aur/PKGBUILD
+    makepkg -si --noconfirm --dir "${build_dir}"
+}
 
 
 printf "${PURPLE}Installing GGH ${NC}\n\n"
 
-setSystem
-downloadBinary
-install
-printf "\n${GREEN}GGH was installed successfully to:${NC} $EXECUTABLE_PATH\n"
+if command -v makepkg >/dev/null 2>&1; then
+    install_aur_package
+    printf "\n${GREEN}GGH was installed successfully to:${NC} $(which ggh)\n"
+else
+    setSystem
+    downloadBinary
+    install
+    printf "\n${GREEN}GGH was installed successfully to:${NC} $EXECUTABLE_PATH\n"
+fi
