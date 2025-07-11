@@ -215,24 +215,11 @@ func (m model) View() string {
 func Select(rows []table.Row, what Selecting) config.SSHConfig {
 	var columns []table.Column
 	if what == SelectConfig {
-		columns = append(columns, []table.Column{
-			{Title: "Name"},
-			{Title: "Host"},
-			{Title: "Port"},
-			{Title: "User"},
-			{Title: "Key"},
-		}...)
+		columns = theme.GetColumns(theme.PrintConfig)
 	}
 
 	if what == SelectHistory {
-		columns = append(columns, []table.Column{
-			{Title: "Name"},
-			{Title: "Host"},
-			{Title: "Port"},
-			{Title: "User"},
-			{Title: "Key"},
-			{Title: "Last login"},
-		}...)
+		columns = theme.GetColumns(theme.PrintHistory)
 	}
 
 	t := table.New(
@@ -266,6 +253,7 @@ func Select(rows []table.Row, what Selecting) config.SSHConfig {
 
 	return config.SSHConfig{}
 }
+
 func (m model) HelpView() string {
 
 	km := table.DefaultKeyMap()

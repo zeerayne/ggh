@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -15,13 +16,36 @@ import (
 
 type SSHConfig struct {
 	Name                  string `json:"name"`
-	Host                  string `json:"host"`
-	Port                  string `json:"port"`
-	User                  string `json:"user"`
-	Key                   string `json:"key"`
-	UserKnownHostsFile    string `json:"userknownhostsfile"`
-	StrictHostKeyChecking string `json:"stricthostkeychecking"`
-	LogLevel              string `json:"loglevel"`
+	Host                  string `json:"host" ssh:"HostName"`
+	Port                  string `json:"port" ssh:"Port"`
+	User                  string `json:"user" ssh:"User"`
+	Key                   string `json:"key" ssh:"IdentityFile"`
+	UserKnownHostsFile    string `json:"userknownhostsfile" ssh:"UserKnownHostsFile"`
+	StrictHostKeyChecking string `json:"stricthostkeychecking" ssh:"StrictHostKeyChecking"`
+	LogLevel              string `json:"loglevel" ssh:"LogLevel"`
+}
+
+type optionSetter func(*SSHConfig, string)
+
+var supportedOptions = map[string]optionSetter{}
+
+func init() {
+	t := reflect.TypeOf(SSHConfig{})
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		tag := field.Tag.Get("ssh")
+		if tag == "" {
+			continue
+		}
+
+		supportedOptions[tag] = makeFieldSetter(i)
+	}
+}
+
+func makeFieldSetter(fieldIndex int) optionSetter {
+	return func(c *SSHConfig, v string) {
+		reflect.ValueOf(c).Elem().Field(fieldIndex).SetString(v)
+	}
 }
 
 func Parse(configFile string) ([]SSHConfig, error) {
@@ -60,27 +84,17 @@ func ParseWithSearch(search string, configFile string) ([]SSHConfig, error) {
 			if len(lineData) > 1 {
 				value = lineData[1]
 			}
-			switch {
-			case strings.Contains(line, "Include"):
+			if strings.Contains(line, "Include") {
 				result, err := ParseInclude(search, value)
 				if err != nil {
 					panic(err)
 				}
 				configs = append(configs, result...)
-			case option == "HostName":
-				sshConfig.Host = value
-			case option == "Port":
-				sshConfig.Port = value
-			case option == "User":
-				sshConfig.User = value
-			case option == "IdentityFile":
-				sshConfig.Key = value
-			case option == "UserKnownHostsFile":
-				sshConfig.UserKnownHostsFile = value
-			case option == "StrictHostKeyChecking":
-				sshConfig.StrictHostKeyChecking = value
-			case option == "LogLevel":
-				sshConfig.LogLevel = value
+				continue
+			}
+
+			if setter, ok := supportedOptions[option]; ok {
+				setter(&sshConfig, value)
 			}
 		}
 
