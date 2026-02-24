@@ -204,7 +204,20 @@ func (m model) View() string {
 	if m.choice.Host != "" || m.exit {
 		return ""
 	}
-	return theme.BaseStyle.Render(m.table.View()) + "\n  " + m.HelpView() + "\n"
+
+	tableView := theme.BaseStyle.Render(m.table.View())
+	tableWidth := lipgloss.Width(tableView)
+
+	help := m.HelpView()
+	counter := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
+		Light: "#909090",
+		Dark:  "#626262",
+	}).Render(fmt.Sprintf("%d/%d  ", m.table.Cursor()+1, len(m.table.Rows())))
+
+	padding := max(1, tableWidth-2-lipgloss.Width(help)-lipgloss.Width(counter))
+	footer := help + strings.Repeat(" ", padding) + counter
+
+	return tableView + "\n  " + footer + "\n"
 }
 
 func Select(rows []table.Row, configs []config.SSHConfig, what Selecting) config.SSHConfig {
