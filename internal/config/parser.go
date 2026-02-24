@@ -15,14 +15,15 @@ import (
 )
 
 type SSHConfig struct {
-	Name                  string `json:"name"`
-	Host                  string `json:"host" ssh:"HostName"`
-	Port                  string `json:"port" ssh:"Port"`
-	User                  string `json:"user" ssh:"User"`
-	Key                   string `json:"key" ssh:"IdentityFile"`
-	UserKnownHostsFile    string `json:"userknownhostsfile" ssh:"UserKnownHostsFile"`
-	StrictHostKeyChecking string `json:"stricthostkeychecking" ssh:"StrictHostKeyChecking"`
-	LogLevel              string `json:"loglevel" ssh:"LogLevel"`
+	Name                  string   `json:"name"`
+	Host                  string   `json:"host" ssh:"HostName"`
+	Port                  string   `json:"port" ssh:"Port"`
+	User                  string   `json:"user" ssh:"User"`
+	Key                   string   `json:"key" ssh:"IdentityFile"`
+	UserKnownHostsFile    string   `json:"userknownhostsfile" ssh:"UserKnownHostsFile"`
+	StrictHostKeyChecking string   `json:"stricthostkeychecking" ssh:"StrictHostKeyChecking"`
+	LogLevel              string   `json:"loglevel" ssh:"LogLevel"`
+	SetEnv                []string `json:"setenv" ssh:"SetEnv" repeatable:"true"`
 }
 
 type optionSetter func(*SSHConfig, string)
@@ -38,13 +39,24 @@ func init() {
 			continue
 		}
 
-		supportedOptions[tag] = makeFieldSetter(i)
+		if field.Tag.Get("repeatable") == "true" {
+			supportedOptions[tag] = makeSliceFieldSetter(i)
+		} else {
+			supportedOptions[tag] = makeFieldSetter(i)
+		}
 	}
 }
 
 func makeFieldSetter(fieldIndex int) optionSetter {
 	return func(c *SSHConfig, v string) {
 		reflect.ValueOf(c).Elem().Field(fieldIndex).SetString(v)
+	}
+}
+
+func makeSliceFieldSetter(fieldIndex int) optionSetter {
+	return func(c *SSHConfig, v string) {
+		field := reflect.ValueOf(c).Elem().Field(fieldIndex)
+		field.Set(reflect.Append(field, reflect.ValueOf(v)))
 	}
 }
 

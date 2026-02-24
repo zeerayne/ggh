@@ -34,9 +34,8 @@ func GenerateCommandArgs(c config.SSHConfig) []string {
 	for i := 0; i < val.NumField(); i++ {
 		field := typ.Field(i)
 		tag := field.Tag.Get("ssh")
-		value := val.Field(i).String()
 
-		if tag == "" || value == "" {
+		if tag == "" {
 			continue
 		}
 
@@ -45,7 +44,19 @@ func GenerateCommandArgs(c config.SSHConfig) []string {
 			continue
 		}
 
-		args = append(args, "-o", fmt.Sprintf("%s=%s", tag, value))
+		fieldVal := val.Field(i)
+
+		if field.Type.Kind() == reflect.Slice {
+			for j := 0; j < fieldVal.Len(); j++ {
+				args = append(args, "-o", fmt.Sprintf("%s %s", tag, fieldVal.Index(j).String()))
+			}
+		} else {
+			value := fieldVal.String()
+			if value == "" {
+				continue
+			}
+			args = append(args, "-o", fmt.Sprintf("%s=%s", tag, value))
+		}
 	}
 
 	return args
