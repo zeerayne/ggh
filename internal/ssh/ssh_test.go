@@ -30,10 +30,10 @@ func TestGenerateCommandArgs_SetEnv(t *testing.T) {
 		}
 	}
 
-	// Should have both SetEnv values, quoted
+	// Should have both SetEnv values
 	expected := []string{
-		"'SetEnv=TERM=xterm-256color'",
-		"'SetEnv=COLORTERM=truecolor'",
+		"SetEnv TERM=xterm-256color",
+		"SetEnv COLORTERM=truecolor",
 	}
 	for _, exp := range expected {
 		found := false
@@ -58,7 +58,7 @@ func TestGenerateCommandArgs_NoSetEnv(t *testing.T) {
 	args := GenerateCommandArgs(c)
 
 	for _, a := range args {
-		if a == "'SetEnv='" {
+		if a == "SetEnv" {
 			t.Error("Empty SetEnv should not appear in args")
 		}
 	}
