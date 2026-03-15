@@ -24,6 +24,7 @@ type SSHConfig struct {
 	StrictHostKeyChecking string   `json:"stricthostkeychecking" ssh:"StrictHostKeyChecking"`
 	LogLevel              string   `json:"loglevel" ssh:"LogLevel"`
 	SetEnv                []string `json:"setenv" ssh:"SetEnv" repeatable:"true"`
+	ConnectTimeout        string   `json:"connecttimeout" ssh:"ConnectTimeout"`
 }
 
 type optionSetter func(*SSHConfig, string)
