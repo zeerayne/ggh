@@ -2,14 +2,15 @@ package interactive
 
 import (
 	"fmt"
-	"github.com/byawitz/ggh/internal/config"
-	"github.com/byawitz/ggh/internal/history"
-	"github.com/byawitz/ggh/internal/settings"
-	"github.com/byawitz/ggh/internal/theme"
 	"math"
 	"os"
 	"slices"
 	"strings"
+
+	"github.com/byawitz/ggh/internal/config"
+	"github.com/byawitz/ggh/internal/history"
+	"github.com/byawitz/ggh/internal/settings"
+	"github.com/byawitz/ggh/internal/theme"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -34,6 +35,7 @@ const (
 
 type model struct {
 	table        table.Model
+	configs      []config.SSHConfig
 	choice       config.SSHConfig
 	what         Selecting
 	exit         bool
@@ -188,7 +190,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.exit = true
 			return m, tea.Quit
 		case "enter":
-			m.choice = setConfig(m.table.SelectedRow(), m.what)
+			if idx := m.table.Cursor(); idx >= 0 && idx < len(m.configs) {
+				m.choice = m.configs[idx]
+			}
 			return m, tea.Quit
 		}
 	}
@@ -196,43 +200,34 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func setConfig(row table.Row, what Selecting) config.SSHConfig {
-	return config.SSHConfig{
-		Host: row[1],
-		Port: row[2],
-		User: row[3],
-		Key:  row[4],
-	}
-}
-
 func (m model) View() string {
 	if m.choice.Host != "" || m.exit {
 		return ""
 	}
-	return theme.BaseStyle.Render(m.table.View()) + "\n  " + m.HelpView() + "\n"
+
+	tableView := theme.BaseStyle.Render(m.table.View())
+	tableWidth := lipgloss.Width(tableView)
+
+	help := m.HelpView()
+	counter := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
+		Light: "#909090",
+		Dark:  "#626262",
+	}).Render(fmt.Sprintf("%d/%d  ", m.table.Cursor()+1, len(m.table.Rows())))
+
+	padding := max(1, tableWidth-2-lipgloss.Width(help)-lipgloss.Width(counter))
+	footer := help + strings.Repeat(" ", padding) + counter
+
+	return tableView + "\n  " + footer + "\n"
 }
 
-func Select(rows []table.Row, what Selecting) config.SSHConfig {
+func Select(rows []table.Row, configs []config.SSHConfig, what Selecting) config.SSHConfig {
 	var columns []table.Column
 	if what == SelectConfig {
-		columns = append(columns, []table.Column{
-			{Title: "Name"},
-			{Title: "Host"},
-			{Title: "Port"},
-			{Title: "User"},
-			{Title: "Key"},
-		}...)
+		columns = theme.GetColumns(theme.PrintConfig)
 	}
 
 	if what == SelectHistory {
-		columns = append(columns, []table.Column{
-			{Title: "Name"},
-			{Title: "Host"},
-			{Title: "Port"},
-			{Title: "User"},
-			{Title: "Key"},
-			{Title: "Last login"},
-		}...)
+		columns = theme.GetColumns(theme.PrintHistory)
 	}
 
 	t := table.New(
@@ -248,7 +243,7 @@ func Select(rows []table.Row, what Selecting) config.SSHConfig {
 
 	t.SetStyles(s)
 
-	p := tea.NewProgram(model{table: t, what: what})
+	p := tea.NewProgram(model{table: t, configs: configs, what: what})
 	m, err := p.Run()
 	if err != nil {
 		fmt.Println("error while running the interactive selector, ", err)
@@ -266,6 +261,7 @@ func Select(rows []table.Row, what Selecting) config.SSHConfig {
 
 	return config.SSHConfig{}
 }
+
 func (m model) HelpView() string {
 
 	km := table.DefaultKeyMap()

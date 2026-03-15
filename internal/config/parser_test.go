@@ -21,6 +21,21 @@ Host host3-prod
 	Port 5369
 	User ubuntu
 	IdentityFile ~/.ssh/id_rsa
+
+Host host4-env
+	HostName 192.168.1.12
+	User root
+	SetEnv TERM=xterm
+
+Host host5-all-options
+	HostName openwrt.lan 192.168.1.1
+	Port 5369
+	User openwrt
+	IdentityFile ~/.ssh/id_rsa
+	StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+	SetEnv TERM=xterm-256color
+	SetEnv COLORTERM=truecolor
 `
 
 func TestParsing(t *testing.T) {
@@ -30,8 +45,10 @@ func TestParsing(t *testing.T) {
 		t.Fatalf("Parsing failed: %v", err)
 	}
 
-	if len(configs) != 3 {
-		t.Errorf("Parsing config file failed: got %v, want %v\n", len(configs), 3)
+	expected_length := 5
+
+	if len(configs) != expected_length {
+		t.Errorf("Parsing config file failed: got %v, want %v\n", len(configs), expected_length)
 	}
 }
 func TestParsingWithSearch(t *testing.T) {

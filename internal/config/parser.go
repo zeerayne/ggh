@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -14,11 +15,50 @@ import (
 )
 
 type SSHConfig struct {
-	Name string `json:"name"`
-	Host string `json:"host"`
-	Port string `json:"port"`
-	User string `json:"user"`
-	Key  string `json:"key"`
+	Name                  string   `json:"name"`
+	Host                  string   `json:"host" ssh:"HostName"`
+	Port                  string   `json:"port" ssh:"Port"`
+	User                  string   `json:"user" ssh:"User"`
+	Key                   string   `json:"key" ssh:"IdentityFile"`
+	UserKnownHostsFile    string   `json:"userknownhostsfile" ssh:"UserKnownHostsFile"`
+	StrictHostKeyChecking string   `json:"stricthostkeychecking" ssh:"StrictHostKeyChecking"`
+	LogLevel              string   `json:"loglevel" ssh:"LogLevel"`
+	SetEnv                []string `json:"setenv" ssh:"SetEnv" repeatable:"true"`
+	ConnectTimeout        string   `json:"connecttimeout" ssh:"ConnectTimeout"`
+}
+
+type optionSetter func(*SSHConfig, string)
+
+var supportedOptions = map[string]optionSetter{}
+
+func init() {
+	t := reflect.TypeOf(SSHConfig{})
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		tag := field.Tag.Get("ssh")
+		if tag == "" {
+			continue
+		}
+
+		if field.Tag.Get("repeatable") == "true" {
+			supportedOptions[tag] = makeSliceFieldSetter(i)
+		} else {
+			supportedOptions[tag] = makeFieldSetter(i)
+		}
+	}
+}
+
+func makeFieldSetter(fieldIndex int) optionSetter {
+	return func(c *SSHConfig, v string) {
+		reflect.ValueOf(c).Elem().Field(fieldIndex).SetString(v)
+	}
+}
+
+func makeSliceFieldSetter(fieldIndex int) optionSetter {
+	return func(c *SSHConfig, v string) {
+		field := reflect.ValueOf(c).Elem().Field(fieldIndex)
+		field.Set(reflect.Append(field, reflect.ValueOf(v)))
+	}
 }
 
 func Parse(configFile string) ([]SSHConfig, error) {
@@ -52,25 +92,22 @@ func ParseWithSearch(search string, configFile string) ([]SSHConfig, error) {
 			line = m1.ReplaceAllString(line, " ")
 
 			lineData := strings.Split(line, " ")
+			option := lineData[0]
 			value := ""
 			if len(lineData) > 1 {
 				value = lineData[1]
 			}
-			switch {
-			case strings.Contains(line, "Include"):
+			if strings.Contains(line, "Include") {
 				result, err := ParseInclude(search, value)
 				if err != nil {
 					panic(err)
 				}
 				configs = append(configs, result...)
-			case strings.Contains(line, "Host"):
-				sshConfig.Host = value
-			case strings.Contains(line, "Port"):
-				sshConfig.Port = value
-			case strings.Contains(line, "User"):
-				sshConfig.User = value
-			case strings.Contains(line, "IdentityFile"):
-				sshConfig.Key = value
+				continue
+			}
+
+			if setter, ok := supportedOptions[option]; ok {
+				setter(&sshConfig, value)
 			}
 		}
 

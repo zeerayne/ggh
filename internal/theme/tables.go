@@ -12,7 +12,7 @@ const (
 	PrintHistory
 )
 
-func PrintTable(rows []table.Row, p Print) string {
+func GetColumns(p Print) []table.Column {
 	columns := []table.Column{
 		{Title: "Name", Width: 10},
 		{Title: "Host", Width: 15},
@@ -24,6 +24,12 @@ func PrintTable(rows []table.Row, p Print) string {
 	if p == PrintHistory {
 		columns = append(columns, table.Column{Title: "Last login", Width: 15})
 	}
+
+	return columns
+}
+
+func PrintTable(rows []table.Row, p Print) string {
+	columns := GetColumns(p)
 
 	t := table.New(
 		table.WithColumns(columns),

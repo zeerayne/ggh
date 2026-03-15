@@ -42,7 +42,7 @@ runAsRoot() {
 
 downloadBinary() {
     GITHUB_FILE="ggh_${OS}_${ARCH}"
-    GITHUB_URL="https://github.com/byawitz/ggh/releases/latest/download/$GITHUB_FILE"
+    GITHUB_URL="https://github.com/zeerayne/ggh/releases/latest/download/$GITHUB_FILE"
     curl $GITHUB_URL --location --progress-bar --output "ggh-tmp"
 
 }
@@ -61,11 +61,23 @@ install() {
     fi
 }
 
+install_aur_package() {
+    build_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/ggh
+    mkdir -p "${build_dir}"
+    curl --output "${build_dir}/PKGBUILD" https://raw.githubusercontent.com/zeerayne/ggh/refs/heads/master/install/aur/PKGBUILD
+    makepkg -si --noconfirm --dir "${build_dir}" || exit 1
+    rm -rf "${build_dir}"
+}
 
 
 printf "${PURPLE}Installing GGH ${NC}\n\n"
 
-setSystem
-downloadBinary
-install
-printf "\n${GREEN}GGH was installed successfully to:${NC} $EXECUTABLE_PATH\n"
+if command -v makepkg >/dev/null 2>&1; then
+    install_aur_package
+    printf "\n${GREEN}GGH was installed successfully to:${NC} $(which ggh)\n"
+else
+    setSystem
+    downloadBinary
+    install
+    printf "\n${GREEN}GGH was installed successfully to:${NC} $EXECUTABLE_PATH\n"
+fi
