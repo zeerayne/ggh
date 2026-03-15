@@ -42,7 +42,7 @@ runAsRoot() {
 
 downloadBinary() {
     GITHUB_FILE="ggh_${OS}_${ARCH}"
-    GITHUB_URL="https://github.com/byawitz/ggh/releases/latest/download/$GITHUB_FILE"
+    GITHUB_URL="https://github.com/zeerayne/ggh/releases/latest/download/$GITHUB_FILE"
     curl $GITHUB_URL --location --progress-bar --output "ggh-tmp"
 
 }
@@ -64,8 +64,7 @@ install() {
 install_aur_package() {
     build_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/ggh
     mkdir -p "${build_dir}"
-    curl --output "${build_dir}/.SRCINFO" https://raw.githubusercontent.com/zeerayne/ggh/refs/heads/dev/install/aur/.SRCINFO
-    curl --output "${build_dir}/PKGBUILD" https://raw.githubusercontent.com/zeerayne/ggh/refs/heads/dev/install/aur/PKGBUILD
+    curl --output "${build_dir}/PKGBUILD" https://raw.githubusercontent.com/zeerayne/ggh/refs/heads/master/install/aur/PKGBUILD
     makepkg -si --noconfirm --dir "${build_dir}" || exit 1
     rm -rf "${build_dir}"
 }

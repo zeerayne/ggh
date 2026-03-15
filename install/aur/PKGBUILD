@@ -13,7 +13,7 @@ conflicts=("${pkgname%-git}" "${pkgname%-git}-bin")
 depends=(glibc openssh)
 makedepends=(git go)
 
-source=("git+${url}.git#branch=dev")
+source=("git+${url}.git")
 sha256sums=('SKIP')
 
 prepare() {
