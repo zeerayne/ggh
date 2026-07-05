@@ -61,6 +61,12 @@ func makeSliceFieldSetter(fieldIndex int) optionSetter {
 	}
 }
 
+func SetOption(c *SSHConfig, option string, value string) {
+	if setter, ok := supportedOptions[option]; ok {
+		setter(c, value)
+	}
+}
+
 func Parse(configFile string) ([]SSHConfig, error) {
 	return ParseWithSearch("", configFile)
 }
