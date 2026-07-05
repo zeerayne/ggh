@@ -3,12 +3,13 @@ package history
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/byawitz/ggh/internal/config"
-	"github.com/charmbracelet/bubbles/table"
 	"os"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/byawitz/ggh/internal/config"
+	"github.com/charmbracelet/bubbles/table"
 )
 
 func AddHistoryFromArgs(args []string) {
@@ -22,9 +23,14 @@ func AddHistoryFromArgs(args []string) {
 		return
 	}
 
-	generatedConfig := config.SSHConfig{}
+	generatedConfig := parseSSHConfigFromArgs(args)
+	AddHistory(generatedConfig)
+}
 
+func parseSSHConfigFromArgs(args []string) config.SSHConfig {
+	generatedConfig := config.SSHConfig{}
 	skipNext := false
+
 	for i, arg := range args {
 		if skipNext {
 			skipNext = false
@@ -32,23 +38,56 @@ func AddHistoryFromArgs(args []string) {
 		}
 
 		switch {
-		case strings.HasPrefix(arg, "-p"):
-			if arg == "-p" {
+		case arg == "-p":
+			if i+1 < len(args) {
 				generatedConfig.Port = args[i+1]
 				skipNext = true
-			} else {
-				generatedConfig.Port = args[i][2:]
 			}
+		case strings.HasPrefix(arg, "-p"):
+			generatedConfig.Port = strings.TrimPrefix(arg, "-p")
 		case arg == "-i":
-			generatedConfig.Key = args[i+1]
-			skipNext = true
+			if i+1 < len(args) {
+				generatedConfig.Key = args[i+1]
+				skipNext = true
+			}
+		case strings.HasPrefix(arg, "-i"):
+			generatedConfig.Key = strings.TrimPrefix(arg, "-i")
+		case arg == "-o":
+			if i+1 < len(args) {
+				parseSSHOption(&generatedConfig, args[i+1])
+				skipNext = true
+			}
+		case strings.HasPrefix(arg, "-o"):
+			parseSSHOption(&generatedConfig, strings.TrimPrefix(arg, "-o"))
 		case strings.Contains(arg, "@"):
-			values := strings.Split(arg, "@")
+			values := strings.SplitN(arg, "@", 2)
 			generatedConfig.User = values[0]
 			generatedConfig.Host = values[1]
 		}
 	}
-	AddHistory(generatedConfig)
+
+	return generatedConfig
+}
+
+func parseSSHOption(c *config.SSHConfig, value string) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return
+	}
+
+	var option string
+	var optionValue string
+	if idx := strings.IndexAny(value, " \t"); idx != -1 {
+		option = strings.TrimSpace(value[:idx])
+		optionValue = strings.TrimSpace(value[idx+1:])
+	} else if idx := strings.Index(value, "="); idx != -1 {
+		option = strings.TrimSpace(value[:idx])
+		optionValue = strings.TrimSpace(value[idx+1:])
+	} else {
+		return
+	}
+
+	config.SetOption(c, option, optionValue)
 }
 
 func AddHistory(c config.SSHConfig) {
