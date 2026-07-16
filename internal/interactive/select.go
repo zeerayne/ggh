@@ -31,6 +31,7 @@ const (
 	ContentExtraMargin     = 12
 	PreferredKeyExtraWidth = 15
 	MaxKeyExtraWidth       = 30
+	MaxTableHeight         = 12
 )
 
 type model struct {
@@ -152,8 +153,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.table.SetHeight(m.windowHeight)
 			return m, tea.EnterAltScreen
 		} else {
-			// if not fullscreen, set the height to a minimum of 8 rows
-			m.table.SetHeight(int(math.Min(8, float64(len(m.table.Rows())+2))))
+			// if not fullscreen, set the height
+			m.table.SetHeight(int(math.Min(MaxTableHeight, float64(len(m.table.Rows())+2))))
 			return m, tea.ExitAltScreen
 		}
 
@@ -178,8 +179,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.table.SetHeight(m.windowHeight)
 					return m, tea.EnterAltScreen
 				} else {
-					// if not fullscreen, set the height to a minimum of 8 rows
-					m.table.SetHeight(int(math.Min(8, float64(len(m.table.Rows())+2))))
+					// if not fullscreen, set the height
+					m.table.SetHeight(int(math.Min(MaxTableHeight, float64(len(m.table.Rows())+2))))
 					return m, tea.ExitAltScreen
 				}
 			}
@@ -234,7 +235,7 @@ func Select(rows []table.Row, configs []config.SSHConfig, what Selecting) config
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(true),
-		table.WithHeight(int(math.Min(8, float64(len(rows)+1)))),
+		table.WithHeight(int(math.Min(MaxTableHeight, float64(len(rows)+2)))),
 	)
 
 	s := table.DefaultStyles()
