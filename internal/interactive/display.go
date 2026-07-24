@@ -29,8 +29,13 @@ func Config(value string) []string {
 			c.Key,
 		})
 	}
+
 	c := Select(rows, list, SelectConfig)
-	return ssh.GenerateCommandArgs(c)
+	history.AddHistory(c)
+	if c.IsDirectSSH() {
+		return ssh.GenerateCommandArgs(c)
+	}
+	return []string{c.Name}
 }
 
 func History() []string {
@@ -46,6 +51,7 @@ func History() []string {
 	}
 
 	var rows []table.Row
+	var configs []config.SSHConfig
 	currentTime := time.Now()
 	for _, historyItem := range list {
 		rows = append(rows, table.Row{
@@ -56,11 +62,14 @@ func History() []string {
 			historyItem.Connection.Key,
 			fmt.Sprintf("%s", history.ReadableTime(currentTime.Sub(historyItem.Date))),
 		})
-	}
-	var configs []config.SSHConfig
-	for _, historyItem := range list {
 		configs = append(configs, historyItem.Connection)
 	}
+
 	c := Select(rows, configs, SelectHistory)
-	return ssh.GenerateCommandArgs(c)
+	c.CleanName()
+	history.AddHistory(c)
+	if c.IsDirectSSH() {
+		return ssh.GenerateCommandArgs(c)
+	}
+	return []string{c.Name}
 }
